@@ -8,7 +8,6 @@ app = Flask(__name__, static_folder='.')
 #  CONFIGURACIÓN DE LA BASE DE DATOS - RAILWAY
 # =============================================
 def conectar():
-    return mysql.connector.connect(
          return mysql.connector.connect(
         host     = os.environ.get('MYSQLHOST'),
         port     = int(os.environ.get('MYSQLPORT')),
