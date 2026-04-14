@@ -1,9 +1,7 @@
 <?php
-// =============================================
-//  CONFIGURACIÓN DE LA BASE DE DATOS - RAILWAY
-// =============================================
-define('DB_HOST',    'mysql.railway.internal');
-define('DB_PORT',    '3306');
+//  CONFIGURACION DE LA BASE DE DATOS - RAILWAY
+define('DB_HOST',    'metro.proxy.rlwy.net');
+define('DB_PORT',    '18232');
 define('DB_USER',    'root');
 define('DB_PASS',    'EDvXzhJWTpPMqtselPdYOLHcqsWrKWVm');
 define('DB_NAME',    'railway');
@@ -22,7 +20,7 @@ function conectar(): PDO {
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $opciones);
         } catch (PDOException $e) {
             http_response_code(500);
-            die(json_encode(['error' => 'Error de conexión: ' . $e->getMessage()]));
+            die(json_encode(['error' => 'Error de conexiOn: ' . $e->getMessage()]));
         }
     }
     return $pdo;
