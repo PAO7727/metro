@@ -17,7 +17,54 @@
 </div>
 
 <div class="container">
+<!--  TRENES -->
+<div id="seccion-trenes" class="seccion">
 
+  <div class="filter-row">
+    <label>Filtrar por línea:</label>
+    <select id="filtro-linea" onchange="cargarTrenes()">
+      <option value="">Todas las líneas</option>
+    </select>
+
+    <!-- BOTÓN NUEVO -->
+    <button onclick="mostrarFormularioTren()" class="btn-agregar">
+      + Agregar Tren
+    </button>
+  </div>
+
+  <!-- FORMULARIO OCULTO -->
+  <div id="form-tren" style="display:none; margin-top:10px;">
+    <input type="number" id="tren-id" placeholder="ID del tren">
+    
+    <select id="tren-linea">
+      <option value="">Seleccionar línea</option>
+    </select>
+
+    <select id="tren-cochera">
+      <option value="">Seleccionar cochera</option>
+    </select>
+
+    <button onclick="guardarTren()">Guardar</button>
+    <button onclick="cancelarTren()">Cancelar</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#Tren</th>
+          <th>Línea asignada</th>
+          <th>Cochera</th>
+          <th>Estación cochera</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-trenes">
+        <tr><td colspan="4" class="loading">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+  
   <!-- SECCIÓN DE ESTADÍSTICAS -->
   <div class="stats" id="stats">
     <div class="stat"><div class="stat-label">Líneas</div><div class="stat-value" id="s-lineas">…</div></div>
