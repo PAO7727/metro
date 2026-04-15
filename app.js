@@ -141,6 +141,41 @@ function cancelarTren() {
   document.getElementById("form-tren").style.display = "none";
 }
 
+async function guardarTren() {
+  const id = document.getElementById("tren-id").value;
+  const linea = document.getElementById("tren-linea").value;
+  const cochera = document.getElementById("tren-cochera").value;
+
+  if (!id || !cochera) {
+    alert("El tren debe tener ID y cochera obligatoriamente");
+    return;
+  }
+
+  // Enviar al backend
+  const res = await fetch("/api/trenes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      id_tren: id,
+      id_linea: linea || null,
+      id_cochera: cochera
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.error) {
+    alert(data.error);
+  } else {
+    alert("Tren agregado correctamente");
+    cancelarTren();
+    cargarTrenes();
+  }
+}
+
+
 // ── TRENES ──────────────────────────────
 function poblarSelectLineas(lineas) {
   const s1 = document.getElementById('filtro-linea');
