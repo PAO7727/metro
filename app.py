@@ -21,6 +21,14 @@ def conectar():
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
+         
+@app.route('/style.css')
+def css():
+    return send_from_directory('.', 'style.css')
+
+@app.route('/app.js')
+def js():
+    return send_from_directory('.', 'app.js')
 
 # ── Resumen / estadísticas ───────────────────
 @app.route('/api/resumen')
