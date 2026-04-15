@@ -1,3 +1,6 @@
+# Flask es el framework que permite crear la aplicación web
 flask==3.0.3
+# Instala el conector de MySQL para Python
 mysql-connector-python==8.4.0
+# Es un servidor WSGI que se usa para ejecutar tu aplicación en producción
 gunicorn==22.0.0
