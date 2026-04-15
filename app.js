@@ -132,6 +132,15 @@ async function cargarEstaciones() {
   }
 }
 
+//Muestra y oculta el formulario de agregar tren
+function mostrarFormularioTren() {
+  document.getElementById("form-tren").style.display = "block";
+}
+
+function cancelarTren() {
+  document.getElementById("form-tren").style.display = "none";
+}
+
 // ── TRENES ──────────────────────────────
 function poblarSelectLineas(lineas) {
   const s1 = document.getElementById('filtro-linea');
