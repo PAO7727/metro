@@ -20,7 +20,7 @@ def conectar():
 # ── Página principal ─────────────────────────
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
+    return app.send_static_file('index.html')
 
 # ── Resumen / estadísticas ───────────────────
 @app.route('/api/resumen')
