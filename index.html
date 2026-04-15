@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"> <!-- Permite usar caracteres especiales como tildes -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- este codigo nos permite que lo podamos visualizar en moviles-->
   <title>Metro — Sistema de Gestión</title>
   <link rel="stylesheet" href="/style.css"> <!--enlaza a la carpeta style-->
 </head>
@@ -12,13 +12,13 @@
   <div class="header-icon">🚇</div>
   <div>
     <h1>Metro — Sistema de Gestión</h1>
-    <p>Líneas · Estaciones · Trenes · Cocheras · Accesos</p>
+    <p>Líneas · Estaciones · Trenes · Cocheras · Accesos</p> 
   </div>
 </div>
 
 <div class="container">
 
-  <!-- ESTADÍSTICAS -->
+  <!-- SECCIÓN DE ESTADÍSTICAS -->
   <div class="stats" id="stats">
     <div class="stat"><div class="stat-label">Líneas</div><div class="stat-value" id="s-lineas">…</div></div>
     <div class="stat"><div class="stat-label">Estaciones</div><div class="stat-value" id="s-estaciones">…</div></div>
@@ -27,7 +27,7 @@
     <div class="stat"><div class="stat-label">Accesos</div><div class="stat-value" id="s-accesos">…</div></div>
   </div>
 
-  <!-- TABS -->
+ <!-- Cada boton cambia de sección -->
   <div class="tabs">
     <button class="tab active" onclick="cambiarTab('lineas',this)">Líneas</button>
     <button class="tab" onclick="cambiarTab('estaciones',this)">Estaciones</button>
@@ -36,12 +36,12 @@
     <button class="tab" onclick="cambiarTab('cocheras',this)">Cocheras</button>
   </div>
 
-  <!-- ══ LÍNEAS ══ -->
+  <!-- LÍNEAS -->
   <div id="seccion-lineas" class="seccion activa">
     <div id="cards-lineas" class="cards"><div class="loading">Cargando líneas…</div></div>
   </div>
 
-  <!-- ══ ESTACIONES ══ -->
+  <!-- ESTACIONES -->
   <div id="seccion-estaciones" class="seccion">
     <div class="info-box">Las estaciones con punto verde ● tienen cochera asignada. Una estación puede pertenecer a varias líneas.</div>
     <div class="table-wrap">
@@ -52,7 +52,7 @@
     </div>
   </div>
 
-  <!-- ══ TRENES ══ -->
+  <!--  TRENES -->
   <div id="seccion-trenes" class="seccion">
     <div class="filter-row">
       <label>Filtrar por línea:</label>
