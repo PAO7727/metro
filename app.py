@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request 
 import mysql.connector
 import os
 
@@ -113,6 +113,26 @@ def estaciones():
         return jsonify({'error': str(e)}), 500
 
 # ── Trenes ───────────────────────────────────
+@app.route('/api/trenes', methods=['GET'])
+def trenes():
+    try:
+        con = conectar()
+        cur = con.cursor(dictionary=True)
+        cur.execute("""
+            SELECT t.id_tren, t.id_linea, l.nombre AS linea,
+                   t.id_cochera, e.nombre AS estacion_cochera
+            FROM tren t
+            LEFT JOIN linea l ON l.id_linea = t.id_linea
+            LEFT JOIN cochera c ON c.id_cochera = t.id_cochera
+            LEFT JOIN estacion e ON e.id_estacion = c.id_estacion
+            ORDER BY t.id_tren
+        """)
+        resultado = cur.fetchall()
+        cur.close(); con.close()
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+             
 @app.route('/api/trenes', methods=['POST'])
 def agregar_tren():
     try:
@@ -176,6 +196,7 @@ def agregar_tren():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+             
 # ── Accesos de una línea ─────────────────────
 @app.route('/api/accesos_linea/<int:id_linea>')
 def accesos_linea(id_linea):
