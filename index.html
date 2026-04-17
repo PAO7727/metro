@@ -20,11 +20,26 @@
 
   <!-- ESTADÍSTICAS -->
   <div class="stats" id="stats">
-    <div class="stat"><div class="stat-label">Líneas</div><div class="stat-value" id="s-lineas">…</div></div>
-    <div class="stat"><div class="stat-label">Estaciones</div><div class="stat-value" id="s-estaciones">…</div></div>
-    <div class="stat"><div class="stat-label">Trenes</div><div class="stat-value" id="s-trenes">…</div></div>
-    <div class="stat"><div class="stat-label">Cocheras</div><div class="stat-value" id="s-cocheras">…</div></div>
-    <div class="stat"><div class="stat-label">Accesos</div><div class="stat-value" id="s-accesos">…</div></div>
+    <div class="stat">
+      <div class="stat-label">Líneas</div>
+      <div class="stat-value" id="s-lineas">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Estaciones</div>
+      <div class="stat-value" id="s-estaciones">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Trenes</div>
+      <div class="stat-value" id="s-trenes">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Cocheras</div>
+      <div class="stat-value" id="s-cocheras">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Accesos</div>
+      <div class="stat-value" id="s-accesos">0</div>
+    </div>
   </div>
 
   <!-- TABS -->
@@ -78,12 +93,12 @@
 
     <!-- FORMULARIO OCULTO -->
     <div id="form-tren" style="display:none; margin-top:10px;">
-      <input type="number" id="tren-id" placeholder="ID del tren">
+      <input type="number" id="tren-id" placeholder="ID del tren" min="1">
       <select id="tren-linea">
-        <option value="">Seleccionar línea</option>
+        <option value="">Sin línea (no asignado)</option>
       </select>
       <select id="tren-cochera">
-        <option value="">Seleccionar cochera</option>
+        <option value="">-- Seleccionar cochera (obligatorio) --</option>
       </select>
       <button onclick="guardarTren()">Guardar</button>
       <button onclick="cancelarTren()">Cancelar</button>
