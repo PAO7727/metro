@@ -1,4 +1,7 @@
+// ─────────────────────────────────────────
 //  Metro — Sistema de Gestión (app.js)
+// ─────────────────────────────────────────
+
 const COLORES_DEFAULT = ['#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#16a085'];
 let lineasCache = [];
 
@@ -28,15 +31,45 @@ function cambiarTab(nombre, btn) {
   if (nombre === 'cocheras')   cargarCocheras();
 }
 
+// ── CONTADOR ANIMADO ─────────────────────────
+function actualizarContador(id, nuevoValor) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const valorAnterior = parseInt(el.textContent) || 0;
+  const diferencia    = nuevoValor - valorAnterior;
+  if (diferencia === 0) { el.textContent = nuevoValor; return; }
+
+  const duracion   = 600;
+  const pasos      = 20;
+  const incremento = diferencia / pasos;
+  let actual = valorAnterior;
+  let paso   = 0;
+
+  el.style.transition = 'color 0.3s';
+  el.style.color = diferencia > 0 ? '#27ae60' : '#c0392b';
+
+  const intervalo = setInterval(() => {
+    paso++;
+    actual += incremento;
+    el.textContent = Math.round(actual);
+    if (paso >= pasos) {
+      clearInterval(intervalo);
+      el.textContent = nuevoValor;
+      setTimeout(() => { el.style.color = ''; }, 800);
+    }
+  }, duracion / pasos);
+}
+
 // ── RESUMEN (stats) ──────────────────────────
 async function cargarResumen() {
   try {
     const d = await fetch('/api/resumen').then(r => r.json());
-    document.getElementById('s-lineas').textContent     = d.lineas;
-    document.getElementById('s-estaciones').textContent = d.estaciones;
-    document.getElementById('s-trenes').textContent     = d.trenes;
-    document.getElementById('s-cocheras').textContent   = d.cocheras;
-    document.getElementById('s-accesos').textContent    = d.accesos;
+    actualizarContador('s-lineas',     d.lineas);
+    actualizarContador('s-estaciones', d.estaciones);
+    actualizarContador('s-trenes',     d.trenes);
+    actualizarContador('s-cocheras',   d.cocheras);
+    actualizarContador('s-accesos',    d.accesos);
   } catch(e) { console.warn('Resumen:', e); }
 }
 
@@ -55,9 +88,9 @@ async function cargarLineas() {
 
     container.innerHTML = '';
     for (let i = 0; i < lineas.length; i++) {
-      const l = lineas[i];
+      const l     = lineas[i];
       const color = colorLinea(l, i);
-      const card = document.createElement('div');
+      const card  = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
         <div class="card-head">
@@ -66,7 +99,10 @@ async function cargarLineas() {
               <span style="width:14px;height:14px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
               ${l.nombre}
             </div>
-            <div class="card-sub">${l.num_estaciones} estaciones · ${l.num_trenes} trenes</div>
+            <div class="card-sub">
+              <span id="contador-est-${l.id_linea}">${l.num_estaciones}</span> estaciones ·
+              <span id="contador-tren-${l.id_linea}">${l.num_trenes}</span> trenes
+            </div>
           </div>
           <span class="badge badge-ok">Activa</span>
         </div>
@@ -85,7 +121,12 @@ async function cargarLineas() {
 async function cargarEstacionesLinea(id_linea, color) {
   try {
     const ests = await fetch(`/api/estaciones_linea/${id_linea}`).then(r => r.json());
-    const ul = document.getElementById('est-linea-' + id_linea);
+    const ul   = document.getElementById('est-linea-' + id_linea);
+
+    // Actualizar contador de estaciones en la card de la línea
+    const contEst = document.getElementById(`contador-est-${id_linea}`);
+    if (contEst) contEst.textContent = ests.length;
+
     if (!ests.length) {
       ul.innerHTML = '<li class="est-item" style="color:#aaa">Sin estaciones</li>';
       return;
@@ -94,7 +135,9 @@ async function cargarEstacionesLinea(id_linea, color) {
       <li class="est-item">
         <span class="orden" style="background:${color}20;color:${color}">${e.orden}</span>
         ${e.nombre}
-        ${e.num_accesos > 0 ? `<span style="font-size:11px;color:#888">(${e.num_accesos} acceso${e.num_accesos !== 1 ? 's' : ''})</span>` : ''}
+        ${e.num_accesos > 0
+          ? `<span style="font-size:11px;color:#888">(${e.num_accesos} acceso${e.num_accesos !== 1 ? 's' : ''})</span>`
+          : ''}
         ${e.id_cochera ? '<span class="cochera-dot" title="Tiene cochera">●</span>' : ''}
       </li>`).join('');
   } catch(e) { console.warn(e); }
@@ -106,6 +149,10 @@ async function cargarEstaciones() {
   tbody.innerHTML = '<tr><td colspan="6" class="loading">Cargando…</td></tr>';
   try {
     const ests = await fetch('/api/estaciones').then(r => r.json());
+
+    // Actualizar contador global con animación
+    actualizarContador('s-estaciones', ests.length);
+
     if (!ests.length) {
       tbody.innerHTML = '<tr><td colspan="6" class="loading">Sin registros</td></tr>';
       return;
@@ -129,24 +176,21 @@ async function cargarEstaciones() {
 }
 
 // ── FORMULARIO TRENES ────────────────────────
-
-// Muestra el formulario limpio y carga selects
 async function mostrarFormularioTren() {
-  // Limpiar campos
   document.getElementById("tren-id").value = "";
   document.getElementById("form-tren").style.display = "block";
 
-  // Poblar select de líneas (línea es OPCIONAL según el ejercicio)
+  // Poblar líneas — opcional según el ejercicio
   const selLinea = document.getElementById("tren-linea");
   selLinea.innerHTML = '<option value="">Sin línea (no asignado)</option>';
   lineasCache.forEach(l => {
     const opt = document.createElement('option');
     opt.value = l.id_linea;
-    opt.textContent = l.nombre;
+    opt.textContent = `${l.nombre}  (${l.num_estaciones} est. · ${l.num_trenes} trenes actuales)`;
     selLinea.appendChild(opt);
   });
 
-  // Poblar select de cocheras (OBLIGATORIO según el ejercicio)
+  // Poblar cocheras — obligatorio según el ejercicio
   const selCochera = document.getElementById("tren-cochera");
   selCochera.innerHTML = '<option value="">-- Seleccionar cochera (obligatorio) --</option>';
   try {
@@ -154,12 +198,10 @@ async function mostrarFormularioTren() {
     cochs.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id_cochera;
-      opt.textContent = `#${c.id_cochera} — ${c.estacion}`;
+      opt.textContent = `#${c.id_cochera} — ${c.estacion}  (${c.num_trenes} trenes)`;
       selCochera.appendChild(opt);
     });
-  } catch(e) {
-    console.warn('Error cargando cocheras:', e);
-  }
+  } catch(e) { console.warn('Error cargando cocheras:', e); }
 }
 
 function cancelarTren() {
@@ -168,24 +210,13 @@ function cancelarTren() {
 }
 
 async function guardarTren() {
-  const id       = document.getElementById("tren-id").value.trim();
-  const linea    = document.getElementById("tren-linea").value;
-  const cochera  = document.getElementById("tren-cochera").value;
+  const id      = document.getElementById("tren-id").value.trim();
+  const linea   = document.getElementById("tren-linea").value;
+  const cochera = document.getElementById("tren-cochera").value;
 
-  // Validaciones en el frontend
-  if (!id) {
-    alert("Debes ingresar un ID para el tren.");
-    return;
-  }
-  if (parseInt(id) <= 0) {
-    alert("El ID del tren debe ser un número positivo.");
-    return;
-  }
-  if (!cochera) {
-    // REGLA: tren siempre debe tener cochera asignada
-    alert("La cochera es obligatoria. Un tren no puede quedar sin cochera.");
-    return;
-  }
+  if (!id) { alert("Debes ingresar un ID para el tren."); return; }
+  if (parseInt(id) <= 0) { alert("El ID del tren debe ser un número positivo."); return; }
+  if (!cochera) { alert("La cochera es obligatoria. Un tren no puede quedar sin cochera."); return; }
 
   try {
     const res = await fetch("/api/trenes", {
@@ -193,20 +224,20 @@ async function guardarTren() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id_tren:    parseInt(id),
-        id_linea:   linea   ? parseInt(linea)   : null,  // línea es opcional
-        id_cochera: parseInt(cochera)                     // cochera es obligatoria
+        id_linea:   linea   ? parseInt(linea)   : null,
+        id_cochera: parseInt(cochera)
       })
     });
 
     const data = await res.json();
-
     if (data.error) {
       alert("Error: " + data.error);
     } else {
       alert("✅ Tren agregado correctamente.");
       cancelarTren();
       cargarTrenes();
-      cargarResumen(); // actualizar estadísticas
+      cargarResumen();  // actualiza contadores globales con animación
+      cargarLineas();   // actualiza contador de trenes por línea
     }
   } catch(e) {
     alert("Error de conexión: " + e.message);
@@ -235,8 +266,7 @@ async function cargarTrenes() {
   const tbody = document.getElementById('tbody-trenes');
   tbody.innerHTML = '<tr><td colspan="4" class="loading">Cargando…</td></tr>';
 
-  // Usar query param en vez de path param
-  const id = document.getElementById('filtro-linea').value;
+  const id  = document.getElementById('filtro-linea').value;
   const url = id ? `/api/trenes?id_linea=${id}` : '/api/trenes';
 
   try {
@@ -244,13 +274,22 @@ async function cargarTrenes() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const trenes = await res.json();
 
+    // Actualizar contador global si no hay filtro
+    if (!id) actualizarContador('s-trenes', trenes.length);
+
+    // Actualizar contador de trenes en la card de la línea filtrada
+    if (id) {
+      const contTren = document.getElementById(`contador-tren-${id}`);
+      if (contTren) contTren.textContent = trenes.length;
+    }
+
     if (!trenes.length) {
       tbody.innerHTML = '<tr><td colspan="4" class="loading">Sin trenes registrados</td></tr>';
       return;
     }
 
     tbody.innerHTML = trenes.map(t => {
-      const idx = lineasCache.findIndex(l => l.id_linea == t.id_linea);
+      const idx   = lineasCache.findIndex(l => l.id_linea == t.id_linea);
       const color = idx >= 0 ? colorLinea(lineasCache[idx], idx) : '#aaa';
       return `<tr>
         <td style="font-family:monospace;font-weight:600">#${t.id_tren}</td>
@@ -267,7 +306,6 @@ async function cargarTrenes() {
 }
 
 // ── ACCESOS POR LÍNEA ────────────────────────
-// REGLA: interesa conocer todos los accesos de cada línea
 async function cargarAccesos() {
   const id   = document.getElementById('filtro-accesos').value;
   const cont = document.getElementById('lista-accesos');
