@@ -1,71 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"> <!-- Permite usar caracteres especiales como tildes -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- este codigo nos permite que lo podamos visualizar en moviles-->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Metro — Sistema de Gestión</title>
-  <link rel="stylesheet" href="/style.css"> <!--enlaza a la carpeta style-->
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  
+
 <div class="header">
   <div class="header-icon">🚇</div>
   <div>
     <h1>Metro — Sistema de Gestión</h1>
-    <p>Líneas · Estaciones · Trenes · Cocheras · Accesos</p> 
+    <p>Líneas · Estaciones · Trenes · Cocheras · Accesos</p>
   </div>
 </div>
 
 <div class="container">
-<!--  TRENES -->
-<div id="seccion-trenes" class="seccion">
 
-  <div class="filter-row">
-    <label>Filtrar por línea:</label>
-    <select id="filtro-linea" onchange="cargarTrenes()">
-      <option value="">Todas las líneas</option>
-    </select>
-
-    <!-- BOTÓN NUEVO -->
-    <button onclick="mostrarFormularioTren()" class="btn-agregar">
-      + Agregar Tren
-    </button>
-  </div>
-
-  <!-- FORMULARIO OCULTO -->
-  <div id="form-tren" style="display:none; margin-top:10px;">
-    <input type="number" id="tren-id" placeholder="ID del tren">
-    
-    <select id="tren-linea">
-      <option value="">Seleccionar línea</option>
-    </select>
-
-    <select id="tren-cochera">
-      <option value="">Seleccionar cochera</option>
-    </select>
-
-    <button onclick="guardarTren()">Guardar</button>
-    <button onclick="cancelarTren()">Cancelar</button>
-  </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#Tren</th>
-          <th>Línea asignada</th>
-          <th>Cochera</th>
-          <th>Estación cochera</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-trenes">
-        <tr><td colspan="4" class="loading">Cargando…</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-  
-  <!-- SECCIÓN DE ESTADÍSTICAS -->
+  <!-- ESTADÍSTICAS -->
   <div class="stats" id="stats">
     <div class="stat"><div class="stat-label">Líneas</div><div class="stat-value" id="s-lineas">…</div></div>
     <div class="stat"><div class="stat-label">Estaciones</div><div class="stat-value" id="s-estaciones">…</div></div>
@@ -74,7 +27,7 @@
     <div class="stat"><div class="stat-label">Accesos</div><div class="stat-value" id="s-accesos">…</div></div>
   </div>
 
- <!-- Cada boton cambia de sección -->
+  <!-- TABS -->
   <div class="tabs">
     <button class="tab active" onclick="cambiarTab('lineas',this)">Líneas</button>
     <button class="tab" onclick="cambiarTab('estaciones',this)">Estaciones</button>
@@ -93,29 +46,67 @@
     <div class="info-box">Las estaciones con punto verde ● tienen cochera asignada. Una estación puede pertenecer a varias líneas.</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Estación</th><th>Dirección</th><th>Andenes</th><th>Líneas</th><th>Accesos</th><th>Cochera</th></tr></thead>
-        <tbody id="tbody-estaciones"><tr><td colspan="6" class="loading">Cargando…</td></tr></tbody>
+        <thead>
+          <tr>
+            <th>Estación</th>
+            <th>Dirección</th>
+            <th>Andenes</th>
+            <th>Líneas</th>
+            <th>Accesos</th>
+            <th>Cochera</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-estaciones">
+          <tr><td colspan="6" class="loading">Cargando…</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
 
-  <!--  TRENES -->
+  <!-- TRENES -->
   <div id="seccion-trenes" class="seccion">
+
     <div class="filter-row">
       <label>Filtrar por línea:</label>
       <select id="filtro-linea" onchange="cargarTrenes()">
         <option value="">Todas las líneas</option>
       </select>
+      <button onclick="mostrarFormularioTren()" class="btn-agregar">
+        + Agregar Tren
+      </button>
     </div>
+
+    <!-- FORMULARIO OCULTO -->
+    <div id="form-tren" style="display:none; margin-top:10px;">
+      <input type="number" id="tren-id" placeholder="ID del tren">
+      <select id="tren-linea">
+        <option value="">Seleccionar línea</option>
+      </select>
+      <select id="tren-cochera">
+        <option value="">Seleccionar cochera</option>
+      </select>
+      <button onclick="guardarTren()">Guardar</button>
+      <button onclick="cancelarTren()">Cancelar</button>
+    </div>
+
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#Tren</th><th>Línea asignada</th><th>Cochera</th><th>Estación cochera</th></tr></thead>
-        <tbody id="tbody-trenes"><tr><td colspan="4" class="loading">Cargando…</td></tr></tbody>
+        <thead>
+          <tr>
+            <th>#Tren</th>
+            <th>Línea asignada</th>
+            <th>Cochera</th>
+            <th>Estación cochera</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-trenes">
+          <tr><td colspan="4" class="loading">Cargando…</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
 
-  <!-- ══ ACCESOS POR LÍNEA ══ -->
+  <!-- ACCESOS POR LÍNEA -->
   <div id="seccion-accesos" class="seccion">
     <div class="filter-row">
       <label>Seleccionar línea:</label>
@@ -126,18 +117,26 @@
     <div id="lista-accesos"></div>
   </div>
 
-  <!-- ══ COCHERAS ══ -->
+  <!-- COCHERAS -->
   <div id="seccion-cocheras" class="seccion">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#Cochera</th><th>Estación</th><th>Trenes asignados</th></tr></thead>
-        <tbody id="tbody-cocheras"><tr><td colspan="3" class="loading">Cargando…</td></tr></tbody>
+        <thead>
+          <tr>
+            <th>#Cochera</th>
+            <th>Estación</th>
+            <th>Trenes asignados</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-cocheras">
+          <tr><td colspan="3" class="loading">Cargando…</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
 
 </div><!-- /container -->
-  
-  <script src="/app.js"></script> <!-- enlazar a nuestra app.js -->
+
+<script src="/app.js"></script>
 </body>
 </html>
