@@ -51,13 +51,43 @@
     <button class="tab" onclick="cambiarTab('cocheras',this)">Cocheras</button>
   </div>
 
-  <!-- LÍNEAS -->
+  <!-- ══ LÍNEAS ══ -->
   <div id="seccion-lineas" class="seccion activa">
+
+    <div class="filter-row">
+      <button onclick="mostrarFormularioLinea()" class="btn-agregar">+ Agregar Línea</button>
+    </div>
+
+    <!-- Formulario agregar línea -->
+    <div id="form-linea" style="display:none; margin-top:10px;">
+      <input type="number" id="linea-id"        placeholder="ID de la línea"  min="1">
+      <input type="text"   id="linea-nombre"     placeholder="Nombre (ej: Línea 4)">
+      <input type="text"   id="linea-direccion"  placeholder="Dirección (ej: Este-Oeste)">
+      <input type="text"   id="linea-color"      placeholder="Color (ej: Azul)">
+      <button onclick="guardarLinea()">Guardar</button>
+      <button onclick="cancelarLinea()">Cancelar</button>
+    </div>
+
     <div id="cards-lineas" class="cards"><div class="loading">Cargando líneas…</div></div>
   </div>
 
-  <!-- ESTACIONES -->
+  <!-- ══ ESTACIONES ══ -->
   <div id="seccion-estaciones" class="seccion">
+
+    <div class="filter-row">
+      <button onclick="mostrarFormularioEstacion()" class="btn-agregar">+ Agregar Estación</button>
+    </div>
+
+    <!-- Formulario agregar estación -->
+    <div id="form-estacion" style="display:none; margin-top:10px;">
+      <input type="number" id="estacion-id"        placeholder="ID de la estación" min="1">
+      <input type="text"   id="estacion-nombre"     placeholder="Nombre (ej: Sur)">
+      <input type="text"   id="estacion-direccion"  placeholder="Dirección (ej: Zona7)">
+      <input type="number" id="estacion-andenes"    placeholder="Número de andenes" min="1">
+      <button onclick="guardarEstacion()">Guardar</button>
+      <button onclick="cancelarEstacion()">Cancelar</button>
+    </div>
+
     <div class="info-box">Las estaciones con punto verde ● tienen cochera asignada. Una estación puede pertenecer a varias líneas.</div>
     <div class="table-wrap">
       <table>
@@ -78,7 +108,7 @@
     </div>
   </div>
 
-  <!-- TRENES -->
+  <!-- ══ TRENES ══ -->
   <div id="seccion-trenes" class="seccion">
 
     <div class="filter-row">
@@ -86,12 +116,10 @@
       <select id="filtro-linea" onchange="cargarTrenes()">
         <option value="">Todas las líneas</option>
       </select>
-      <button onclick="mostrarFormularioTren()" class="btn-agregar">
-        + Agregar Tren
-      </button>
+      <button onclick="mostrarFormularioTren()" class="btn-agregar">+ Agregar Tren</button>
     </div>
 
-    <!-- FORMULARIO OCULTO -->
+    <!-- Formulario agregar tren -->
     <div id="form-tren" style="display:none; margin-top:10px;">
       <input type="number" id="tren-id" placeholder="ID del tren" min="1">
       <select id="tren-linea">
@@ -121,7 +149,7 @@
     </div>
   </div>
 
-  <!-- ACCESOS POR LÍNEA -->
+  <!-- ══ ACCESOS POR LÍNEA ══ -->
   <div id="seccion-accesos" class="seccion">
     <div class="filter-row">
       <label>Seleccionar línea:</label>
@@ -132,8 +160,23 @@
     <div id="lista-accesos"></div>
   </div>
 
-  <!-- COCHERAS -->
+  <!-- ══ COCHERAS ══ -->
   <div id="seccion-cocheras" class="seccion">
+
+    <div class="filter-row">
+      <button onclick="mostrarFormularioCochera()" class="btn-agregar">+ Agregar Cochera</button>
+    </div>
+
+    <!-- Formulario agregar cochera -->
+    <div id="form-cochera" style="display:none; margin-top:10px;">
+      <input type="number" id="cochera-id" placeholder="ID de la cochera" min="1">
+      <select id="cochera-estacion">
+        <option value="">-- Seleccionar estación (obligatorio) --</option>
+      </select>
+      <button onclick="guardarCochera()">Guardar</button>
+      <button onclick="cancelarCochera()">Cancelar</button>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
