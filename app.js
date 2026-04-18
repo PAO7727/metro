@@ -35,23 +35,19 @@ function cambiarTab(nombre, btn) {
 function actualizarContador(id, nuevoValor) {
   const el = document.getElementById(id);
   if (!el) return;
-
   const valorAnterior = parseInt(el.textContent) || 0;
   const diferencia    = nuevoValor - valorAnterior;
   if (diferencia === 0) { el.textContent = nuevoValor; return; }
 
-  const duracion   = 600;
-  const pasos      = 20;
+  const duracion = 600, pasos = 20;
   const incremento = diferencia / pasos;
-  let actual = valorAnterior;
-  let paso   = 0;
+  let actual = valorAnterior, paso = 0;
 
   el.style.transition = 'color 0.3s';
   el.style.color = diferencia > 0 ? '#27ae60' : '#c0392b';
 
   const intervalo = setInterval(() => {
-    paso++;
-    actual += incremento;
+    paso++; actual += incremento;
     el.textContent = Math.round(actual);
     if (paso >= pasos) {
       clearInterval(intervalo);
@@ -61,7 +57,7 @@ function actualizarContador(id, nuevoValor) {
   }, duracion / pasos);
 }
 
-// ── RESUMEN (stats) ──────────────────────────
+// ── RESUMEN ──────────────────────────────────
 async function cargarResumen() {
   try {
     const d = await fetch('/api/resumen').then(r => r.json());
@@ -73,7 +69,9 @@ async function cargarResumen() {
   } catch(e) { console.warn('Resumen:', e); }
 }
 
-// ── LÍNEAS ───────────────────────────────────
+// ════════════════════════════════════════════
+//  LÍNEAS
+// ════════════════════════════════════════════
 async function cargarLineas() {
   try {
     const lineas = await fetch('/api/lineas').then(r => r.json());
@@ -88,9 +86,9 @@ async function cargarLineas() {
 
     container.innerHTML = '';
     for (let i = 0; i < lineas.length; i++) {
-      const l     = lineas[i];
+      const l = lineas[i];
       const color = colorLinea(l, i);
-      const card  = document.createElement('div');
+      const card = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
         <div class="card-head">
@@ -122,13 +120,11 @@ async function cargarEstacionesLinea(id_linea, color) {
   try {
     const ests = await fetch(`/api/estaciones_linea/${id_linea}`).then(r => r.json());
     const ul   = document.getElementById('est-linea-' + id_linea);
-
-    // Actualizar contador de estaciones en la card de la línea
     const contEst = document.getElementById(`contador-est-${id_linea}`);
     if (contEst) contEst.textContent = ests.length;
 
     if (!ests.length) {
-      ul.innerHTML = '<li class="est-item" style="color:#aaa">Sin estaciones</li>';
+      ul.innerHTML = '<li class="est-item" style="color:#aaa">Sin estaciones asignadas</li>';
       return;
     }
     ul.innerHTML = ests.map(e => `
@@ -143,14 +139,52 @@ async function cargarEstacionesLinea(id_linea, color) {
   } catch(e) { console.warn(e); }
 }
 
-// ── ESTACIONES ───────────────────────────────
+// Formulario — Agregar Línea
+function mostrarFormularioLinea() {
+  document.getElementById('linea-id').value        = '';
+  document.getElementById('linea-nombre').value    = '';
+  document.getElementById('linea-direccion').value = '';
+  document.getElementById('linea-color').value     = '';
+  document.getElementById('form-linea').style.display = 'block';
+}
+
+function cancelarLinea() {
+  document.getElementById('form-linea').style.display = 'none';
+}
+
+async function guardarLinea() {
+  const id        = document.getElementById('linea-id').value.trim();
+  const nombre    = document.getElementById('linea-nombre').value.trim();
+  const direccion = document.getElementById('linea-direccion').value.trim();
+  const color     = document.getElementById('linea-color').value.trim();
+
+  if (!id)     { alert('Debes ingresar un ID para la línea.'); return; }
+  if (!nombre) { alert('Debes ingresar un nombre para la línea.'); return; }
+  if (parseInt(id) <= 0) { alert('El ID debe ser un número positivo.'); return; }
+
+  try {
+    const res = await fetch('/api/lineas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_linea: parseInt(id), nombre, direccion, color })
+    });
+    const data = await res.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    alert('✅ Línea agregada correctamente.');
+    cancelarLinea();
+    cargarLineas();
+    cargarResumen();
+  } catch(e) { alert('Error de conexión: ' + e.message); }
+}
+
+// ════════════════════════════════════════════
+//  ESTACIONES
+// ════════════════════════════════════════════
 async function cargarEstaciones() {
   const tbody = document.getElementById('tbody-estaciones');
   tbody.innerHTML = '<tr><td colspan="6" class="loading">Cargando…</td></tr>';
   try {
     const ests = await fetch('/api/estaciones').then(r => r.json());
-
-    // Actualizar contador global con animación
     actualizarContador('s-estaciones', ests.length);
 
     if (!ests.length) {
@@ -175,76 +209,52 @@ async function cargarEstaciones() {
   }
 }
 
-// ── FORMULARIO TRENES ────────────────────────
-async function mostrarFormularioTren() {
-  document.getElementById("tren-id").value = "";
-  document.getElementById("form-tren").style.display = "block";
-
-  // Poblar líneas — opcional según el ejercicio
-  const selLinea = document.getElementById("tren-linea");
-  selLinea.innerHTML = '<option value="">Sin línea (no asignado)</option>';
-  lineasCache.forEach(l => {
-    const opt = document.createElement('option');
-    opt.value = l.id_linea;
-    opt.textContent = `${l.nombre}  (${l.num_estaciones} est. · ${l.num_trenes} trenes actuales)`;
-    selLinea.appendChild(opt);
-  });
-
-  // Poblar cocheras — obligatorio según el ejercicio
-  const selCochera = document.getElementById("tren-cochera");
-  selCochera.innerHTML = '<option value="">-- Seleccionar cochera (obligatorio) --</option>';
-  try {
-    const cochs = await fetch('/api/cocheras').then(r => r.json());
-    cochs.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id_cochera;
-      opt.textContent = `#${c.id_cochera} — ${c.estacion}  (${c.num_trenes} trenes)`;
-      selCochera.appendChild(opt);
-    });
-  } catch(e) { console.warn('Error cargando cocheras:', e); }
+// Formulario — Agregar Estación
+function mostrarFormularioEstacion() {
+  document.getElementById('estacion-id').value        = '';
+  document.getElementById('estacion-nombre').value    = '';
+  document.getElementById('estacion-direccion').value = '';
+  document.getElementById('estacion-andenes').value   = '';
+  document.getElementById('form-estacion').style.display = 'block';
 }
 
-function cancelarTren() {
-  document.getElementById("form-tren").style.display = "none";
-  document.getElementById("tren-id").value = "";
+function cancelarEstacion() {
+  document.getElementById('form-estacion').style.display = 'none';
 }
 
-async function guardarTren() {
-  const id      = document.getElementById("tren-id").value.trim();
-  const linea   = document.getElementById("tren-linea").value;
-  const cochera = document.getElementById("tren-cochera").value;
+async function guardarEstacion() {
+  const id        = document.getElementById('estacion-id').value.trim();
+  const nombre    = document.getElementById('estacion-nombre').value.trim();
+  const direccion = document.getElementById('estacion-direccion').value.trim();
+  const andenes   = document.getElementById('estacion-andenes').value.trim();
 
-  if (!id) { alert("Debes ingresar un ID para el tren."); return; }
-  if (parseInt(id) <= 0) { alert("El ID del tren debe ser un número positivo."); return; }
-  if (!cochera) { alert("La cochera es obligatoria. Un tren no puede quedar sin cochera."); return; }
+  if (!id)     { alert('Debes ingresar un ID para la estación.'); return; }
+  if (!nombre) { alert('Debes ingresar un nombre para la estación.'); return; }
+  if (parseInt(id) <= 0) { alert('El ID debe ser un número positivo.'); return; }
 
   try {
-    const res = await fetch("/api/trenes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('/api/estaciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id_tren:    parseInt(id),
-        id_linea:   linea   ? parseInt(linea)   : null,
-        id_cochera: parseInt(cochera)
+        id_estacion: parseInt(id),
+        nombre,
+        direccion,
+        andenes: andenes ? parseInt(andenes) : null
       })
     });
-
     const data = await res.json();
-    if (data.error) {
-      alert("Error: " + data.error);
-    } else {
-      alert("✅ Tren agregado correctamente.");
-      cancelarTren();
-      cargarTrenes();
-      cargarResumen();  // actualiza contadores globales con animación
-      cargarLineas();   // actualiza contador de trenes por línea
-    }
-  } catch(e) {
-    alert("Error de conexión: " + e.message);
-  }
+    if (data.error) { alert('Error: ' + data.error); return; }
+    alert('✅ Estación agregada correctamente.');
+    cancelarEstacion();
+    cargarEstaciones();
+    cargarResumen();
+  } catch(e) { alert('Error de conexión: ' + e.message); }
 }
 
-// ── TRENES: listar ───────────────────────────
+// ════════════════════════════════════════════
+//  TRENES
+// ════════════════════════════════════════════
 function poblarSelectLineas(lineas) {
   const s1 = document.getElementById('filtro-linea');
   const s2 = document.getElementById('filtro-accesos');
@@ -262,6 +272,69 @@ function poblarSelectLineas(lineas) {
   });
 }
 
+async function mostrarFormularioTren() {
+  document.getElementById('tren-id').value = '';
+  document.getElementById('form-tren').style.display = 'block';
+
+  // Poblar líneas — opcional según el ejercicio
+  const selLinea = document.getElementById('tren-linea');
+  selLinea.innerHTML = '<option value="">Sin línea (no asignado)</option>';
+  lineasCache.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l.id_linea;
+    opt.textContent = `${l.nombre}  (${l.num_estaciones} est. · ${l.num_trenes} trenes)`;
+    selLinea.appendChild(opt);
+  });
+
+  // Poblar cocheras — obligatorio según el ejercicio
+  const selCochera = document.getElementById('tren-cochera');
+  selCochera.innerHTML = '<option value="">-- Seleccionar cochera (obligatorio) --</option>';
+  try {
+    const cochs = await fetch('/api/cocheras').then(r => r.json());
+    cochs.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id_cochera;
+      opt.textContent = `#${c.id_cochera} — ${c.estacion}  (${c.num_trenes} trenes)`;
+      selCochera.appendChild(opt);
+    });
+  } catch(e) { console.warn('Error cargando cocheras:', e); }
+}
+
+function cancelarTren() {
+  document.getElementById('form-tren').style.display = 'none';
+  document.getElementById('tren-id').value = '';
+}
+
+async function guardarTren() {
+  const id      = document.getElementById('tren-id').value.trim();
+  const linea   = document.getElementById('tren-linea').value;
+  const cochera = document.getElementById('tren-cochera').value;
+
+  if (!id)               { alert('Debes ingresar un ID para el tren.'); return; }
+  if (parseInt(id) <= 0) { alert('El ID del tren debe ser un número positivo.'); return; }
+  // REGLA: tren siempre debe tener cochera
+  if (!cochera)          { alert('La cochera es obligatoria. Un tren no puede quedar sin cochera.'); return; }
+
+  try {
+    const res = await fetch('/api/trenes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_tren:    parseInt(id),
+        id_linea:   linea   ? parseInt(linea)   : null,
+        id_cochera: parseInt(cochera)
+      })
+    });
+    const data = await res.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    alert('✅ Tren agregado correctamente.');
+    cancelarTren();
+    cargarTrenes();
+    cargarResumen();
+    cargarLineas();
+  } catch(e) { alert('Error de conexión: ' + e.message); }
+}
+
 async function cargarTrenes() {
   const tbody = document.getElementById('tbody-trenes');
   tbody.innerHTML = '<tr><td colspan="4" class="loading">Cargando…</td></tr>';
@@ -274,10 +347,7 @@ async function cargarTrenes() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const trenes = await res.json();
 
-    // Actualizar contador global si no hay filtro
     if (!id) actualizarContador('s-trenes', trenes.length);
-
-    // Actualizar contador de trenes en la card de la línea filtrada
     if (id) {
       const contTren = document.getElementById(`contador-tren-${id}`);
       if (contTren) contTren.textContent = trenes.length;
@@ -287,7 +357,6 @@ async function cargarTrenes() {
       tbody.innerHTML = '<tr><td colspan="4" class="loading">Sin trenes registrados</td></tr>';
       return;
     }
-
     tbody.innerHTML = trenes.map(t => {
       const idx   = lineasCache.findIndex(l => l.id_linea == t.id_linea);
       const color = idx >= 0 ? colorLinea(lineasCache[idx], idx) : '#aaa';
@@ -305,7 +374,9 @@ async function cargarTrenes() {
   }
 }
 
-// ── ACCESOS POR LÍNEA ────────────────────────
+// ════════════════════════════════════════════
+//  ACCESOS POR LÍNEA
+// ════════════════════════════════════════════
 async function cargarAccesos() {
   const id   = document.getElementById('filtro-accesos').value;
   const cont = document.getElementById('lista-accesos');
@@ -324,7 +395,6 @@ async function cargarAccesos() {
       cont.innerHTML = '<p class="loading">Esta línea no tiene accesos registrados.</p>';
       return;
     }
-
     cont.innerHTML = grupos.map(g => `
       <div class="acc-card">
         <div class="acc-head">
@@ -341,12 +411,16 @@ async function cargarAccesos() {
   }
 }
 
-// ── COCHERAS ─────────────────────────────────
+// ════════════════════════════════════════════
+//  COCHERAS
+// ════════════════════════════════════════════
 async function cargarCocheras() {
   const tbody = document.getElementById('tbody-cocheras');
   tbody.innerHTML = '<tr><td colspan="3" class="loading">Cargando…</td></tr>';
   try {
     const cochs = await fetch('/api/cocheras').then(r => r.json());
+    actualizarContador('s-cocheras', cochs.length);
+
     if (!cochs.length) {
       tbody.innerHTML = '<tr><td colspan="3" class="loading">Sin cocheras</td></tr>';
       return;
@@ -360,6 +434,58 @@ async function cargarCocheras() {
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="3"><div class="error">⚠️ ${e.message}</div></td></tr>`;
   }
+}
+
+// Formulario — Agregar Cochera
+async function mostrarFormularioCochera() {
+  document.getElementById('cochera-id').value = '';
+  document.getElementById('form-cochera').style.display = 'block';
+
+  // Poblar select de estaciones disponibles
+  const selEst = document.getElementById('cochera-estacion');
+  selEst.innerHTML = '<option value="">-- Seleccionar estación --</option>';
+  try {
+    const ests = await fetch('/api/estaciones').then(r => r.json());
+    ests.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.id_estacion;
+      // REGLA: algunas estaciones tienen cochera, se indica si ya tiene una
+      opt.textContent = `${e.nombre} (${e.direccion ?? '—'})${+e.tiene_cochera > 0 ? ' — ya tiene cochera' : ''}`;
+      selEst.appendChild(opt);
+    });
+  } catch(e) { console.warn('Error cargando estaciones:', e); }
+}
+
+function cancelarCochera() {
+  document.getElementById('form-cochera').style.display = 'none';
+  document.getElementById('cochera-id').value = '';
+}
+
+async function guardarCochera() {
+  const id         = document.getElementById('cochera-id').value.trim();
+  const id_estacion = document.getElementById('cochera-estacion').value;
+
+  if (!id)          { alert('Debes ingresar un ID para la cochera.'); return; }
+  if (parseInt(id) <= 0) { alert('El ID debe ser un número positivo.'); return; }
+  // REGLA: cochera siempre debe estar en una estación
+  if (!id_estacion) { alert('Debes seleccionar una estación para la cochera.'); return; }
+
+  try {
+    const res = await fetch('/api/cocheras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_cochera:  parseInt(id),
+        id_estacion: parseInt(id_estacion)
+      })
+    });
+    const data = await res.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    alert('✅ Cochera agregada correctamente.');
+    cancelarCochera();
+    cargarCocheras();
+    cargarResumen();
+  } catch(e) { alert('Error de conexión: ' + e.message); }
 }
 
 // ── INICIO ───────────────────────────────────
