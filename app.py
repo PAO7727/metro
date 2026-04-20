@@ -108,10 +108,9 @@ def estaciones_linea(id_linea):
         cur.execute("""
             SELECT e.*, r.orden, r.id_ruta,
                 (SELECT COUNT(*) FROM acceso a WHERE a.id_estacion = e.id_estacion) AS num_accesos,
-                c.id_cochera
+                (SELECT id_cochera FROM cochera WHERE id_estacion = e.id_estacion LIMIT 1) AS id_cochera
             FROM ruta r
             JOIN estacion e ON e.id_estacion = r.id_estacion
-            LEFT JOIN cochera c ON c.id_estacion = e.id_estacion
             WHERE r.id_linea = %s
             ORDER BY r.orden
         """, (id_linea,))
