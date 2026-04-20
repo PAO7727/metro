@@ -84,7 +84,6 @@ def agregar_linea():
 
         con = conectar()
         cur = con.cursor()
-
         cur.execute("SELECT COUNT(*) FROM linea WHERE id_linea = %s", (id_linea,))
         if cur.fetchone()[0] > 0:
             return jsonify({'error': f'Ya existe una línea con ID {id_linea}'}), 400
@@ -107,7 +106,7 @@ def estaciones_linea(id_linea):
         con = conectar()
         cur = con.cursor(dictionary=True)
         cur.execute("""
-            SELECT e.*, r.orden,
+            SELECT e.*, r.orden, r.id_ruta,
                 (SELECT COUNT(*) FROM acceso a WHERE a.id_estacion = e.id_estacion) AS num_accesos,
                 c.id_cochera
             FROM ruta r
@@ -162,7 +161,6 @@ def agregar_estacion():
 
         con = conectar()
         cur = con.cursor()
-
         cur.execute("SELECT COUNT(*) FROM estacion WHERE id_estacion = %s", (id_estacion,))
         if cur.fetchone()[0] > 0:
             return jsonify({'error': f'Ya existe una estación con ID {id_estacion}'}), 400
@@ -175,6 +173,79 @@ def agregar_estacion():
         con.commit()
         cur.close(); con.close()
         return jsonify({'mensaje': 'Estación agregada correctamente'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ── Rutas: GET (siguiente id_ruta disponible) ─
+@app.route('/api/ruta/siguiente_id')
+def siguiente_id_ruta():
+    try:
+        con = conectar()
+        cur = con.cursor(dictionary=True)
+        cur.execute("SELECT COALESCE(MAX(id_ruta), 0) + 1 AS siguiente FROM ruta")
+        resultado = cur.fetchone()
+        cur.close(); con.close()
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ── Rutas: POST (asignar estación a línea) ───
+# REGLA: una estación nunca puede dejar de pertenecer a una línea
+@app.route('/api/rutas', methods=['POST'])
+def agregar_ruta():
+    try:
+        data        = request.get_json()
+        id_linea    = data.get('id_linea')
+        id_estacion = data.get('id_estacion')
+        orden       = data.get('orden')
+
+        if not id_linea or not id_estacion or not orden:
+            return jsonify({'error': 'Debes indicar línea, estación y orden'}), 400
+        if int(orden) <= 0:
+            return jsonify({'error': 'El orden debe ser un número positivo'}), 400
+
+        con = conectar()
+        cur = con.cursor()
+
+        # Validar que la línea existe
+        cur.execute("SELECT COUNT(*) FROM linea WHERE id_linea = %s", (id_linea,))
+        if cur.fetchone()[0] == 0:
+            return jsonify({'error': 'La línea seleccionada no existe'}), 400
+
+        # Validar que la estación existe
+        cur.execute("SELECT COUNT(*) FROM estacion WHERE id_estacion = %s", (id_estacion,))
+        if cur.fetchone()[0] == 0:
+            return jsonify({'error': 'La estación seleccionada no existe'}), 400
+
+        # REGLA: una estación nunca puede dejar de pertenecer a una línea
+        # Por eso solo se permite agregar, nunca eliminar
+        cur.execute("""
+            SELECT COUNT(*) FROM ruta
+            WHERE id_linea = %s AND id_estacion = %s
+        """, (id_linea, id_estacion))
+        if cur.fetchone()[0] > 0:
+            return jsonify({'error': 'Esta estación ya pertenece a esta línea'}), 400
+
+        # Validar que el orden no esté ocupado en esa línea
+        cur.execute("""
+            SELECT COUNT(*) FROM ruta
+            WHERE id_linea = %s AND orden = %s
+        """, (id_linea, orden))
+        if cur.fetchone()[0] > 0:
+            return jsonify({'error': f'Ya existe una estación en la posición {orden} de esta línea'}), 400
+
+        # Obtener siguiente id_ruta automáticamente
+        cur.execute("SELECT COALESCE(MAX(id_ruta), 0) + 1 AS siguiente FROM ruta")
+        id_ruta = cur.fetchone()[0]
+
+        cur.execute("""
+            INSERT INTO ruta (id_ruta, id_linea, id_estacion, orden)
+            VALUES (%s, %s, %s, %s)
+        """, (id_ruta, id_linea, id_estacion, orden))
+
+        con.commit()
+        cur.close(); con.close()
+        return jsonify({'mensaje': f'Estación asignada correctamente a la línea en posición {orden}'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -214,7 +285,6 @@ def agregar_tren():
         id_linea   = data.get('id_linea')
         id_cochera = data.get('id_cochera')
 
-        # REGLA: tren debe tener ID y cochera obligatoriamente
         if not id_tren or not id_cochera:
             return jsonify({'error': 'El tren debe tener ID y cochera obligatoriamente'}), 400
         if int(id_tren) <= 0:
@@ -231,7 +301,6 @@ def agregar_tren():
         if cur.fetchone()[0] == 0:
             return jsonify({'error': 'La cochera seleccionada no existe'}), 400
 
-        # REGLAS DE LÍNEA
         if id_linea:
             cur.execute("SELECT COUNT(*) FROM linea WHERE id_linea = %s", (id_linea,))
             if cur.fetchone()[0] == 0:
@@ -246,9 +315,9 @@ def agregar_tren():
             num_trenes = cur.fetchone()[0]
 
             if num_estaciones > 0 and (num_trenes + 1) < num_estaciones:
-                return jsonify({'error': f'La línea necesita mínimo {num_estaciones} trenes (igual al número de estaciones). Tiene {num_trenes}.'}), 400
+                return jsonify({'error': f'La línea necesita mínimo {num_estaciones} trenes. Tiene {num_trenes}.'}), 400
             if (num_trenes + 1) > (num_estaciones * 2):
-                return jsonify({'error': f'No se puede agregar más trenes. El máximo es {num_estaciones * 2} (doble de estaciones). Tiene {num_trenes}.'}), 400
+                return jsonify({'error': f'Máximo permitido: {num_estaciones * 2} trenes (doble de estaciones). Tiene {num_trenes}.'}), 400
 
         cur.execute("""
             INSERT INTO tren (id_tren, id_linea, id_cochera)
@@ -298,12 +367,10 @@ def agregar_cochera():
         con = conectar()
         cur = con.cursor()
 
-        # Validar que la estación existe
         cur.execute("SELECT COUNT(*) FROM estacion WHERE id_estacion = %s", (id_estacion,))
         if cur.fetchone()[0] == 0:
             return jsonify({'error': 'La estación seleccionada no existe'}), 400
 
-        # Validar que no exista ya esa cochera
         cur.execute("SELECT COUNT(*) FROM cochera WHERE id_cochera = %s", (id_cochera,))
         if cur.fetchone()[0] > 0:
             return jsonify({'error': f'Ya existe una cochera con ID {id_cochera}'}), 400
@@ -320,7 +387,6 @@ def agregar_cochera():
         return jsonify({'error': str(e)}), 500
 
 # ── Accesos de una línea ─────────────────────
-# REGLA: interesa conocer todos los accesos de cada línea
 @app.route('/api/accesos_linea/<int:id_linea>')
 def accesos_linea(id_linea):
     try:
