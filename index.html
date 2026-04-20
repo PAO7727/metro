@@ -53,27 +53,27 @@
 
   <!-- ══ LÍNEAS ══ -->
   <div id="seccion-lineas" class="seccion activa">
-
     <div class="filter-row">
       <button onclick="mostrarFormularioLinea()" class="btn-agregar">+ Agregar Línea</button>
     </div>
 
     <!-- Formulario agregar línea -->
     <div id="form-linea" style="display:none; margin-top:10px;">
-      <input type="number" id="linea-id"        placeholder="ID de la línea"  min="1">
-      <input type="text"   id="linea-nombre"     placeholder="Nombre (ej: Línea 4)">
-      <input type="text"   id="linea-direccion"  placeholder="Dirección (ej: Este-Oeste)">
-      <input type="text"   id="linea-color"      placeholder="Color (ej: Azul)">
+      <input type="number" id="linea-id"       placeholder="ID de la línea"       min="1">
+      <input type="text"   id="linea-nombre"    placeholder="Nombre (ej: Línea 4)">
+      <input type="text"   id="linea-direccion" placeholder="Dirección (ej: Este-Oeste)">
+      <input type="text"   id="linea-color"     placeholder="Color (ej: Azul)">
       <button onclick="guardarLinea()">Guardar</button>
       <button onclick="cancelarLinea()">Cancelar</button>
     </div>
 
-    <div id="cards-lineas" class="cards"><div class="loading">Cargando líneas…</div></div>
+    <div id="cards-lineas" class="cards">
+      <div class="loading">Cargando líneas…</div>
+    </div>
   </div>
 
   <!-- ══ ESTACIONES ══ -->
   <div id="seccion-estaciones" class="seccion">
-
     <div class="filter-row">
       <button onclick="mostrarFormularioEstacion()" class="btn-agregar">+ Agregar Estación</button>
     </div>
@@ -93,12 +93,8 @@
       <table>
         <thead>
           <tr>
-            <th>Estación</th>
-            <th>Dirección</th>
-            <th>Andenes</th>
-            <th>Líneas</th>
-            <th>Accesos</th>
-            <th>Cochera</th>
+            <th>Estación</th><th>Dirección</th><th>Andenes</th>
+            <th>Líneas</th><th>Accesos</th><th>Cochera</th>
           </tr>
         </thead>
         <tbody id="tbody-estaciones">
@@ -110,7 +106,6 @@
 
   <!-- ══ TRENES ══ -->
   <div id="seccion-trenes" class="seccion">
-
     <div class="filter-row">
       <label>Filtrar por línea:</label>
       <select id="filtro-linea" onchange="cargarTrenes()">
@@ -136,10 +131,8 @@
       <table>
         <thead>
           <tr>
-            <th>#Tren</th>
-            <th>Línea asignada</th>
-            <th>Cochera</th>
-            <th>Estación cochera</th>
+            <th>#Tren</th><th>Línea asignada</th>
+            <th>Cochera</th><th>Estación cochera</th>
           </tr>
         </thead>
         <tbody id="tbody-trenes">
@@ -162,7 +155,6 @@
 
   <!-- ══ COCHERAS ══ -->
   <div id="seccion-cocheras" class="seccion">
-
     <div class="filter-row">
       <button onclick="mostrarFormularioCochera()" class="btn-agregar">+ Agregar Cochera</button>
     </div>
@@ -181,9 +173,7 @@
       <table>
         <thead>
           <tr>
-            <th>#Cochera</th>
-            <th>Estación</th>
-            <th>Trenes asignados</th>
+            <th>#Cochera</th><th>Estación</th><th>Trenes asignados</th>
           </tr>
         </thead>
         <tbody id="tbody-cocheras">
@@ -194,7 +184,6 @@
   </div>
 
 </div><!-- /container -->
-
 <script src="/app.js"></script>
 </body>
 </html>
