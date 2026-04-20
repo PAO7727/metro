@@ -3,7 +3,8 @@
 // ─────────────────────────────────────────
 
 const COLORES_DEFAULT = ['#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#16a085'];
-let lineasCache = [];
+let lineasCache    = [];
+let estacionesCache = [];
 
 // ── UTILIDADES ──────────────────────────────
 function colorLinea(linea, idx) {
@@ -76,6 +77,11 @@ async function cargarLineas() {
   try {
     const lineas = await fetch('/api/lineas').then(r => r.json());
     lineasCache = lineas;
+
+    // Cargar estaciones al cache para usarlas en el formulario de ruta
+    const ests = await fetch('/api/estaciones').then(r => r.json());
+    estacionesCache = ests;
+
     poblarSelectLineas(lineas);
 
     const container = document.getElementById('cards-lineas');
@@ -86,9 +92,9 @@ async function cargarLineas() {
 
     container.innerHTML = '';
     for (let i = 0; i < lineas.length; i++) {
-      const l = lineas[i];
+      const l     = lineas[i];
       const color = colorLinea(l, i);
-      const card = document.createElement('div');
+      const card  = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
         <div class="card-head">
@@ -104,10 +110,32 @@ async function cargarLineas() {
           </div>
           <span class="badge badge-ok">Activa</span>
         </div>
+
         <div style="font-size:12px;color:#6b6b67;margin-bottom:8px;font-weight:500">Estaciones en orden</div>
         <ul class="est-list" id="est-linea-${l.id_linea}">
           <li class="est-item" style="color:#aaa">Cargando…</li>
-        </ul>`;
+        </ul>
+
+        <!-- Botón para mostrar formulario de ruta dentro de la card -->
+        <div style="margin-top:10px;">
+          <button class="btn-agregar" style="font-size:12px;padding:4px 10px;"
+            onclick="mostrarFormularioRuta(${l.id_linea})">
+            + Asignar estación a esta línea
+          </button>
+        </div>
+
+        <!-- Formulario de ruta oculto dentro de cada card -->
+        <div id="form-ruta-${l.id_linea}" style="display:none; margin-top:8px;">
+          <select id="ruta-estacion-${l.id_linea}">
+            <option value="">-- Seleccionar estación --</option>
+          </select>
+          <input type="number" id="ruta-orden-${l.id_linea}"
+            placeholder="Orden (ej: 3)" min="1" style="width:110px;">
+          <button onclick="guardarRuta(${l.id_linea})">Asignar</button>
+          <button onclick="cancelarRuta(${l.id_linea})">Cancelar</button>
+          <div id="ruta-msg-${l.id_linea}" style="font-size:12px;margin-top:4px;"></div>
+        </div>`;
+
       container.appendChild(card);
       cargarEstacionesLinea(l.id_linea, color);
     }
@@ -158,8 +186,8 @@ async function guardarLinea() {
   const direccion = document.getElementById('linea-direccion').value.trim();
   const color     = document.getElementById('linea-color').value.trim();
 
-  if (!id)     { alert('Debes ingresar un ID para la línea.'); return; }
-  if (!nombre) { alert('Debes ingresar un nombre para la línea.'); return; }
+  if (!id)               { alert('Debes ingresar un ID para la línea.'); return; }
+  if (!nombre)           { alert('Debes ingresar un nombre para la línea.'); return; }
   if (parseInt(id) <= 0) { alert('El ID debe ser un número positivo.'); return; }
 
   try {
@@ -170,11 +198,91 @@ async function guardarLinea() {
     });
     const data = await res.json();
     if (data.error) { alert('Error: ' + data.error); return; }
-    alert('✅ Línea agregada correctamente.');
+    alert('✅ Línea agregada correctamente. Ahora podés asignarle estaciones desde su card.');
     cancelarLinea();
     cargarLineas();
     cargarResumen();
   } catch(e) { alert('Error de conexión: ' + e.message); }
+}
+
+// ════════════════════════════════════════════
+//  RUTA — Asignar estacion a linea
+// REGLA: una estación nunca puede dejar de pertenecer a una línea
+// ════════════════════════════════════════════
+function mostrarFormularioRuta(id_linea) {
+  // Ocultar otros formularios de ruta abiertos
+  document.querySelectorAll('[id^="form-ruta-"]').forEach(f => {
+    f.style.display = 'none';
+  });
+
+  const form = document.getElementById(`form-ruta-${id_linea}`);
+  form.style.display = 'block';
+
+  // Poblar select con todas las estaciones disponibles
+  const sel = document.getElementById(`ruta-estacion-${id_linea}`);
+  sel.innerHTML = '<option value="">-- Seleccionar estación --</option>';
+  estacionesCache.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id_estacion;
+    opt.textContent = `${e.nombre} (${e.direccion ?? '—'})`;
+    sel.appendChild(opt);
+  });
+
+  // Limpiar orden y mensaje
+  document.getElementById(`ruta-orden-${id_linea}`).value = '';
+  document.getElementById(`ruta-msg-${id_linea}`).textContent = '';
+}
+
+function cancelarRuta(id_linea) {
+  document.getElementById(`form-ruta-${id_linea}`).style.display = 'none';
+}
+
+async function guardarRuta(id_linea) {
+  const id_estacion = document.getElementById(`ruta-estacion-${id_linea}`).value;
+  const orden       = document.getElementById(`ruta-orden-${id_linea}`).value.trim();
+  const msgEl       = document.getElementById(`ruta-msg-${id_linea}`);
+
+  if (!id_estacion) { msgEl.style.color='#c0392b'; msgEl.textContent = '⚠️ Debes seleccionar una estación.'; return; }
+  if (!orden)       { msgEl.style.color='#c0392b'; msgEl.textContent = '⚠️ Debes ingresar el orden.'; return; }
+  if (parseInt(orden) <= 0) { msgEl.style.color='#c0392b'; msgEl.textContent = '⚠️ El orden debe ser positivo.'; return; }
+
+  try {
+    const res = await fetch('/api/rutas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_linea:    parseInt(id_linea),
+        id_estacion: parseInt(id_estacion),
+        orden:       parseInt(orden)
+      })
+    });
+    const data = await res.json();
+    if (data.error) {
+      msgEl.style.color = '#c0392b';
+      msgEl.textContent = '⚠️ ' + data.error;
+      return;
+    }
+    msgEl.style.color = '#27ae60';
+    msgEl.textContent = '✅ ' + data.mensaje;
+
+    // Refrescar la lista de estaciones de esta línea
+    const idx   = lineasCache.findIndex(l => l.id_linea == id_linea);
+    const color = idx >= 0 ? colorLinea(lineasCache[idx], idx) : '#aaa';
+    cargarEstacionesLinea(id_linea, color);
+    cargarResumen();
+
+    // Limpiar campos
+    document.getElementById(`ruta-estacion-${id_linea}`).value = '';
+    document.getElementById(`ruta-orden-${id_linea}`).value    = '';
+
+    setTimeout(() => {
+      msgEl.textContent = '';
+      cancelarRuta(id_linea);
+    }, 2000);
+  } catch(e) {
+    msgEl.style.color = '#c0392b';
+    msgEl.textContent = '⚠️ Error de conexión: ' + e.message;
+  }
 }
 
 // ════════════════════════════════════════════
@@ -185,6 +293,7 @@ async function cargarEstaciones() {
   tbody.innerHTML = '<tr><td colspan="6" class="loading">Cargando…</td></tr>';
   try {
     const ests = await fetch('/api/estaciones').then(r => r.json());
+    estacionesCache = ests;
     actualizarContador('s-estaciones', ests.length);
 
     if (!ests.length) {
@@ -209,7 +318,6 @@ async function cargarEstaciones() {
   }
 }
 
-// Formulario — Agregar Estación
 function mostrarFormularioEstacion() {
   document.getElementById('estacion-id').value        = '';
   document.getElementById('estacion-nombre').value    = '';
@@ -228,8 +336,8 @@ async function guardarEstacion() {
   const direccion = document.getElementById('estacion-direccion').value.trim();
   const andenes   = document.getElementById('estacion-andenes').value.trim();
 
-  if (!id)     { alert('Debes ingresar un ID para la estación.'); return; }
-  if (!nombre) { alert('Debes ingresar un nombre para la estación.'); return; }
+  if (!id)               { alert('Debes ingresar un ID para la estación.'); return; }
+  if (!nombre)           { alert('Debes ingresar un nombre para la estación.'); return; }
   if (parseInt(id) <= 0) { alert('El ID debe ser un número positivo.'); return; }
 
   try {
@@ -237,9 +345,7 @@ async function guardarEstacion() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id_estacion: parseInt(id),
-        nombre,
-        direccion,
+        id_estacion: parseInt(id), nombre, direccion,
         andenes: andenes ? parseInt(andenes) : null
       })
     });
@@ -258,7 +364,6 @@ async function guardarEstacion() {
 function poblarSelectLineas(lineas) {
   const s1 = document.getElementById('filtro-linea');
   const s2 = document.getElementById('filtro-accesos');
-
   lineas.forEach((l, i) => {
     const color = colorLinea(l, i);
     [s1, s2].forEach(sel => {
@@ -276,7 +381,6 @@ async function mostrarFormularioTren() {
   document.getElementById('tren-id').value = '';
   document.getElementById('form-tren').style.display = 'block';
 
-  // Poblar líneas — opcional según el ejercicio
   const selLinea = document.getElementById('tren-linea');
   selLinea.innerHTML = '<option value="">Sin línea (no asignado)</option>';
   lineasCache.forEach(l => {
@@ -286,7 +390,6 @@ async function mostrarFormularioTren() {
     selLinea.appendChild(opt);
   });
 
-  // Poblar cocheras — obligatorio según el ejercicio
   const selCochera = document.getElementById('tren-cochera');
   selCochera.innerHTML = '<option value="">-- Seleccionar cochera (obligatorio) --</option>';
   try {
@@ -312,7 +415,6 @@ async function guardarTren() {
 
   if (!id)               { alert('Debes ingresar un ID para el tren.'); return; }
   if (parseInt(id) <= 0) { alert('El ID del tren debe ser un número positivo.'); return; }
-  // REGLA: tren siempre debe tener cochera
   if (!cochera)          { alert('La cochera es obligatoria. Un tren no puede quedar sin cochera.'); return; }
 
   try {
@@ -338,7 +440,6 @@ async function guardarTren() {
 async function cargarTrenes() {
   const tbody = document.getElementById('tbody-trenes');
   tbody.innerHTML = '<tr><td colspan="4" class="loading">Cargando…</td></tr>';
-
   const id  = document.getElementById('filtro-linea').value;
   const url = id ? `/api/trenes?id_linea=${id}` : '/api/trenes';
 
@@ -420,7 +521,6 @@ async function cargarCocheras() {
   try {
     const cochs = await fetch('/api/cocheras').then(r => r.json());
     actualizarContador('s-cocheras', cochs.length);
-
     if (!cochs.length) {
       tbody.innerHTML = '<tr><td colspan="3" class="loading">Sin cocheras</td></tr>';
       return;
@@ -436,12 +536,10 @@ async function cargarCocheras() {
   }
 }
 
-// Formulario — Agregar Cochera
 async function mostrarFormularioCochera() {
   document.getElementById('cochera-id').value = '';
   document.getElementById('form-cochera').style.display = 'block';
 
-  // Poblar select de estaciones disponibles
   const selEst = document.getElementById('cochera-estacion');
   selEst.innerHTML = '<option value="">-- Seleccionar estación --</option>';
   try {
@@ -449,7 +547,6 @@ async function mostrarFormularioCochera() {
     ests.forEach(e => {
       const opt = document.createElement('option');
       opt.value = e.id_estacion;
-      // REGLA: algunas estaciones tienen cochera, se indica si ya tiene una
       opt.textContent = `${e.nombre} (${e.direccion ?? '—'})${+e.tiene_cochera > 0 ? ' — ya tiene cochera' : ''}`;
       selEst.appendChild(opt);
     });
@@ -462,22 +559,18 @@ function cancelarCochera() {
 }
 
 async function guardarCochera() {
-  const id         = document.getElementById('cochera-id').value.trim();
+  const id          = document.getElementById('cochera-id').value.trim();
   const id_estacion = document.getElementById('cochera-estacion').value;
 
-  if (!id)          { alert('Debes ingresar un ID para la cochera.'); return; }
+  if (!id)               { alert('Debes ingresar un ID para la cochera.'); return; }
   if (parseInt(id) <= 0) { alert('El ID debe ser un número positivo.'); return; }
-  // REGLA: cochera siempre debe estar en una estación
-  if (!id_estacion) { alert('Debes seleccionar una estación para la cochera.'); return; }
+  if (!id_estacion)      { alert('Debes seleccionar una estación para la cochera.'); return; }
 
   try {
     const res = await fetch('/api/cocheras', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_cochera:  parseInt(id),
-        id_estacion: parseInt(id_estacion)
-      })
+      body: JSON.stringify({ id_cochera: parseInt(id), id_estacion: parseInt(id_estacion) })
     });
     const data = await res.json();
     if (data.error) { alert('Error: ' + data.error); return; }
