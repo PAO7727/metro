@@ -96,46 +96,41 @@ async function cargarLineas() {
       const color = colorLinea(l, i);
       const card  = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = `
-        <div class="card-head">
-          <div>
-            <div class="card-title">
-              <span style="width:14px;height:14px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
-              ${l.nombre}
-            </div>
-            <div class="card-sub">
-              <span id="contador-est-${l.id_linea}">${l.num_estaciones}</span> estaciones ·
-              <span id="contador-tren-${l.id_linea}">${l.num_trenes}</span> trenes
-            </div>
-          </div>
-          <span class="badge badge-ok">Activa</span>
-        </div>
+     card.innerHTML = `
+  <div class="card-head">
+    <div>
+      <div class="card-title">
+        <span style="width:14px;height:14px;border-radius:50%;background:${color};display:inline-block;"></span>
+        ${l.nombre}
+      </div>
 
-        <div style="font-size:12px;color:#6b6b67;margin-bottom:8px;font-weight:500">Estaciones en orden</div>
-        <ul class="est-list" id="est-linea-${l.id_linea}">
-          <li class="est-item" style="color:#aaa">Cargando…</li>
-        </ul>
+      <div class="card-sub">
+        <span id="contador-est-${l.id_linea}">${l.num_estaciones}</span> estaciones ·
+        <span id="contador-tren-${l.id_linea}">${l.num_trenes}</span> trenes
+      </div>
+    </div>
+  </div>
 
-        <!-- Botón para mostrar formulario de ruta dentro de la card -->
-        <div style="margin-top:10px;">
-          <button class="btn-agregar" style="font-size:12px;padding:4px 10px;"
-            onclick="mostrarFormularioRuta(${l.id_linea})">
-            + Asignar estación a esta línea
-          </button>
-        </div>
+  <!-- MAPA AQUÍ -->
+  <div id="mapa-linea-${l.id_linea}" style="margin-top:10px;"></div>
 
-        <!-- Formulario de ruta oculto dentro de cada card -->
-        <div id="form-ruta-${l.id_linea}" style="display:none; margin-top:8px;">
-          <select id="ruta-estacion-${l.id_linea}">
-            <option value="">-- Seleccionar estación --</option>
-          </select>
-          <input type="number" id="ruta-orden-${l.id_linea}"
-            placeholder="Orden (ej: 3)" min="1" style="width:110px;">
-          <button onclick="guardarRuta(${l.id_linea})">Asignar</button>
-          <button onclick="cancelarRuta(${l.id_linea})">Cancelar</button>
-          <div id="ruta-msg-${l.id_linea}" style="font-size:12px;margin-top:4px;"></div>
-        </div>`;
+  <!-- FORMULARIO ABAJO -->
+  <div id="form-ruta-${l.id_linea}" style="display:none; margin-top:8px;">
+    <select id="ruta-estacion-${l.id_linea}">
+      <option value="">-- Seleccionar estación --</option>
+    </select>
 
+    <input type="number" id="ruta-orden-${l.id_linea}"
+      placeholder="Orden (ej: 3)" min="1" style="width:110px;">
+
+    <button onclick="guardarRuta(${l.id_linea})">Asignar</button>
+    <button onclick="cancelarRuta(${l.id_linea})">Cancelar</button>
+
+    <div id="ruta-msg-${l.id_linea}" style="font-size:12px;margin-top:4px;"></div>
+  </div>
+`;
+      
+dibujarMapaLinea(linea.id_linea);
       container.appendChild(card);
       cargarEstacionesLinea(l.id_linea, color);
     }
@@ -143,6 +138,38 @@ async function cargarLineas() {
     mostrarError('cards-lineas', 'No se pudo conectar. (' + e.message + ')');
   }
 }
+
+//GENERAR MAPA
+async function generarMapa(id_linea) {
+  const resEst = await fetch(`/api/estaciones_linea/${id_linea}`);
+  const estaciones = await resEst.json();
+
+  const resTren = await fetch(`/api/trenes/${id_linea}`);
+  const trenes = await resTren.json();
+
+  let html = '<div class="linea-mapa">';
+
+  estaciones.forEach((est, i) => {
+    html += `
+      <div class="estacion">
+        <div class="circulo"></div>
+        <div class="nombre">${est.nombre}</div>
+        
+        <div class="trenes">
+          ${trenes.map(t => `🚆${t.id_tren}`).join(" ")}
+        </div>
+      </div>
+    `;
+
+    if (i < estaciones.length - 1) {
+      html += '<div class="linea"></div>';
+    }
+  });
+
+  html += '</div>';
+  return html;
+}
+
 
 async function cargarEstacionesLinea(id_linea, color) {
   try {
