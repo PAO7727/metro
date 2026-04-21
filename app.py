@@ -313,8 +313,6 @@ def agregar_tren():
             cur.execute("SELECT COUNT(*) FROM tren WHERE id_linea = %s", (id_linea,))
             num_trenes = cur.fetchone()[0]
 
-            if num_estaciones > 0 and (num_trenes + 1) < num_estaciones:
-                return jsonify({'error': f'La línea necesita mínimo {num_estaciones} trenes. Tiene {num_trenes}.'}), 400
             if (num_trenes + 1) > (num_estaciones * 2):
                 return jsonify({'error': f'Máximo permitido: {num_estaciones * 2} trenes (doble de estaciones). Tiene {num_trenes}.'}), 400
 
