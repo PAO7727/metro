@@ -582,5 +582,14 @@ async function guardarCochera() {
 }
 
 // ── INICIO ───────────────────────────────────
-cargarResumen();
-cargarLineas();
+async function iniciar() {
+  await cargarResumen();
+  await cargarLineas();
+  // Forzar carga de estaciones y trenes para actualizar contadores
+  const ests   = await fetch('/api/estaciones').then(r => r.json());
+  const trenes = await fetch('/api/trenes').then(r => r.json());
+  actualizarContador('s-estaciones', ests.length);
+  actualizarContador('s-trenes',     trenes.length);
+}
+
+iniciar();
