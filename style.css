@@ -84,4 +84,40 @@
 /* ── CONTROL DE SECCIONES ── */
     .seccion { display: none; }
     .seccion.activa { display: block; }
- 
+
+/* ── MAPA ── */
+ .linea-mapa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.estacion {
+  text-align: center;
+  position: relative;
+}
+
+.circulo {
+  width: 12px;
+  height: 12px;
+  background: #2c3e50;
+  border-radius: 50%;
+  margin: auto;
+}
+
+.linea {
+  width: 40px;
+  height: 3px;
+  background: #2c3e50;
+}
+
+.nombre {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.trenes {
+  font-size: 11px;
+  color: green;
+}
