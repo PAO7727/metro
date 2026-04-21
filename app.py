@@ -279,51 +279,70 @@ def trenes():
 @app.route('/api/trenes', methods=['POST'])
 def agregar_tren():
     try:
-        data       = request.get_json()
-        id_tren    = data.get('id_tren')
-        id_linea   = data.get('id_linea')
+        data = request.get_json()
+
+        id_tren = data.get('id_tren')
+        id_linea = data.get('id_linea')
         id_cochera = data.get('id_cochera')
 
+        # Validación básica
         if not id_tren or not id_cochera:
-            return jsonify({'error': 'El tren debe tener ID y cochera obligatoriamente'}), 400
-        if int(id_tren) <= 0:
-            return jsonify({'error': 'El ID del tren debe ser un número positivo'}), 400
+            return jsonify({'error': 'El tren debe tener ID y cochera'}), 400
 
         con = conectar()
         cur = con.cursor()
 
+        # VALIDAR QUE EL TREN NO EXISTA
         cur.execute("SELECT COUNT(*) FROM tren WHERE id_tren = %s", (id_tren,))
         if cur.fetchone()[0] > 0:
-            return jsonify({'error': f'Ya existe un tren con ID {id_tren}'}), 400
+            return jsonify({'error': 'El tren ya existe'}), 400
 
-        cur.execute("SELECT COUNT(*) FROM cochera WHERE id_cochera = %s", (id_cochera,))
-        if cur.fetchone()[0] == 0:
-            return jsonify({'error': 'La cochera seleccionada no existe'}), 400
+        #  VALIDAR QUE LA COCHERA NO ESTÉ OCUPADA  👈 AQUÍ VA
+        cur.execute("""
+            SELECT COUNT(*) 
+            FROM tren 
+            WHERE id_cochera = %s
+        """, (id_cochera,))
+        ocupada = cur.fetchone()[0]
 
+        if ocupada > 0:
+            return jsonify({'error': 'La cochera ya tiene un tren asignado'}), 400
+
+        # VALIDAR REGLAS DE LÍNEA
         if id_linea:
-            cur.execute("SELECT COUNT(*) FROM linea WHERE id_linea = %s", (id_linea,))
-            if cur.fetchone()[0] == 0:
-                return jsonify({'error': 'La línea seleccionada no existe'}), 400
 
-            # REGLA: mín trenes = N° estaciones
-            cur.execute("SELECT COUNT(*) FROM ruta WHERE id_linea = %s", (id_linea,))
-            num_estaciones = cur.fetchone()[0]
+            cur.execute("""
+                SELECT COUNT(*) 
+                FROM ruta 
+                WHERE id_linea = %s
+            """, (id_linea,))
+            estaciones = cur.fetchone()[0]
 
-            # REGLA: máx trenes = 2 × N° estaciones
-            cur.execute("SELECT COUNT(*) FROM tren WHERE id_linea = %s", (id_linea,))
-            num_trenes = cur.fetchone()[0]
+            cur.execute("""
+                SELECT COUNT(*) 
+                FROM tren 
+                WHERE id_linea = %s
+            """, (id_linea,))
+            trenes = cur.fetchone()[0]
 
-            if (num_trenes + 1) > (num_estaciones * 2):
-                return jsonify({'error': f'Máximo permitido: {num_estaciones * 2} trenes (doble de estaciones). Tiene {num_trenes}.'}), 400
+            if trenes + 1 < estaciones:
+                return jsonify({'error': 'Debe haber al menos tantos trenes como estaciones'}), 400
 
+            if trenes + 1 > estaciones * 2:
+                return jsonify({'error': 'No puede haber más del doble de trenes que estaciones'}), 400
+
+        # INSERTAR (DESPUÉS DE TODAS LAS VALIDACIONES)
         cur.execute("""
             INSERT INTO tren (id_tren, id_linea, id_cochera)
             VALUES (%s, %s, %s)
-        """, (id_tren, id_linea if id_linea else None, id_cochera))
+        """, (id_tren, id_linea, id_cochera))
 
         con.commit()
-        cur.close(); con.close()
+        cur.close()
+        con.close()
+
         return jsonify({'mensaje': 'Tren agregado correctamente'})
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
